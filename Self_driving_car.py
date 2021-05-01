@@ -62,7 +62,7 @@ class car:
         self.time = 0
 
         # Jeśli któryś z krańców auta dotknie granicy samochód umiera
-        def chcec_collision(self, game_map):
+        def check_collision(self, game_map):
             self.alive = True
             for point in self.corners:
                 if game_map.get_at((int(point[0]),int(point[1]))) == end_color:
