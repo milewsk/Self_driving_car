@@ -107,3 +107,54 @@ class car:
                 x = int(self.center[0]+math.cos(math.radians(360-(self.angle+degree)))*lenght)
                 y = int(self.center[1]+math.sin(math.radians(360-(self.angle+degree)))*lenght)
 
+            dist = inst(math.sqrt(math.pow(x - self.center[0],2)+math.pow(y - self.center[1],2)))
+            self.radars.append([(x,y), dist])
+
+        def update(self,game_map):
+            if self.speed_set:
+                self.speed = 20
+                self.speed_set = True
+            
+                #Rotacja sprite i przesunięcie w poprawną stronę względem osi X
+                #Nie można zbilżyć się bliżej niż 20 px
+            self.rotated_sprite = self.rotate_center(self.sprite, self.angle)
+            #Rotacja X
+            self.position[0] += math.cos(math.radians(360-self.angle)) * self.speed
+            self.position[0] = max(self.position[0], 20)
+            self.position[0] = min(self.position[0], WIDTH - 120)
+
+            self.distance += self.speed
+            self.time += 1
+            
+            #Rotacja Y
+            self.position[0] += math.sin(math.radians(360-self.angle)) * self.speed
+            self.position[0] = max(self.position[1], 20)
+            self.position[0] = min(self.position[1], WIDTH - 120)
+
+            #Po zmianie pozycji aktualizacja centrum
+            self.center = [int(self.position[0])+CAR_SIZE_X/2,int(self.position[1]) + CAR_SIZE_Y/2]
+
+            #Obliczanie położenia dla 4 rogów modelu
+            length = 0.5 * CAR_SIZE_X
+            left_top = [self.center[0] + math.cos(math.radians(360 - (self.angle + 30))) * length, self.center[1] + math.sin(math.radians(360 - (self.angle + 30))) * length]
+            right_top = [self.center[0] + math.cos(math.radians(360 - (self.angle + 150))) * length, self.center[1] + math.sin(math.radians(360 - (self.angle + 150))) * length]
+            left_bottom = [self.center[0] + math.cos(math.radians(360 - (self.angle + 210))) * length, self.center[1] + math.sin(math.radians(360 - (self.angle + 210))) * length]
+            right_bottom = [self.center[0] + math.cos(math.radians(360 - (self.angle + 330))) * length, self.center[1] + math.sin(math.radians(360 - (self.angle + 330))) * length]
+            self.corners = [left_top, right_top, left_bottom, right_bottom]
+
+            #Po obliczeniu położenia sprawdzamy czy obiekt nie doktnie krawędzi
+            #Czy nie umrze
+
+            self.check_collision(game_map)
+            self.radars.clear()
+
+            for d in range(-90, 120, 45):
+                self.chceck_radar(d,game_map)
+
+        def get_data(self):
+            radars = self.radars
+            return_values = [0, 0, 0, 0, 0]
+            for i, radar in enumerate(radars):
+                return_values[i] = int(radar[1]/30)
+
+            return return_values
