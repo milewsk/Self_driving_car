@@ -158,3 +158,101 @@ class car:
                 return_values[i] = int(radar[1]/30)
 
             return return_values
+
+
+def run_simulation(genomes, config):
+   
+   nets = []
+   cars = []
+   #puste miejsca na samochody
+
+   #Odpalenie pygame i załączenie planszy
+   pygame.init()
+   screen = pygame.display.set_mode((), pygame = FULLSCREEN)
+
+   #dla każdego genomu-tu samochodu stwórz nową sieć neuronową i dodaj samochodzik
+   for i, j in genomes:
+       net = neat.nn.FeedForwardNetwork.create(j, config)
+       nets.append(net)
+       j.fitness = 0
+       #dodaj samochód do zbioru
+       cars.append(Car())
+
+   clock = pygame.time.Clock()
+   generation_font = pygame.font.SysFont("Arial", 30)
+   alive_font = pygame.font.SysFont("Arial", 20)
+   game_map = pygame.image.load('map.png').convert()
+
+   global generation_number 
+
+   generation_number +=1
+
+   counter = 0
+
+   while True:
+       for event in pygame.event.get():
+           if event.type() == pygame.QUIT:
+               sys.exit(0)
+
+       for i,car in enumerate(cars):
+           output = nets[i].activate(car.get_data())
+           choice = output.index(max(output))
+           if choice == 0:
+               car.angle += 10 # skęt w lewo
+           elif choice == 1:
+               car.agle -= 10 #skręt w prawo
+           elif choice ==2:
+               if(car.spped - 2 >= 12):
+                   car.speed -= 2 #zwolnij jeśli widzisz możliwość zderzenia
+           else:
+               car.speed += 2 # przyśpiesz jeśli nie ma zagrożeń
+           
+       still_alive = 0
+
+       for i,car in enumerate(cars):
+           if car.is_alive():
+               still_alive += 1 
+               car.update(game_map)
+               genomes[i][1].fitness += car.get_reward()
+
+
+       if still_alive == 0:
+           break
+       
+       counter +=1
+
+       #czas upłynął
+       if counter == 30 * 40:
+           break
+
+       # jeśli samochód żyje 
+       screen.blit(game_map, (0,0))
+       for car in cars:
+           if car.is_alive():
+               car.draw(screen)
+
+
+       text = generation_font.render("Generacja: "+str(still_alive), True, (0,0,0))
+       text_rect = text.get_rect()
+       text_rect.center = (900,490)
+       screen.blit(text, text_rect)
+
+       pygame.display.flip()
+       clock.tick(60) 
+
+if __name__ == "__main__":
+
+    #załaduj ustawienia
+    config_path = "./config.txt"
+    config = neat.config.Config(neat.DefaultGenome,
+                                neat.DefaultReproduction,
+                                neat.DefaultSpeciesSet,
+                                neat.DefaultStagnation,
+                                config_path)
+    #populacja
+    population = neat.Population(config)
+    population.add_reporter(neat.StdOutReporter(True))
+    stats = neat.StatisticsReporter()
+    population.add_reporter(stats)
+
+    population.run(run_simulation, 100)
